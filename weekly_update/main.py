@@ -29,6 +29,16 @@ metric_to_input = dict(mark='mark',
                        bugf='filed-bug',
                        email='email')
 
+act_fmt = {
+    'mark': '{record_type:6}[{module}] {parent_url}',
+    'commit': '{record_type:6}[{module}] '
+    '{url_github}{module}/commit/{commit_id} {subject}',
+    'bugr': '{record_type:6}[{module}] {web_link} {status}',
+    'bugf': '{record_type:6}[{module}] {web_link} {status}',
+    'patch': '{record_type:6}[{module}] {parent_url} {subject}',
+    'review': '{record_type:6}[{module}] {url}',
+    'email': '{record_type:6}[{module}] {email_link} {subject}'}
+
 activity_format = {
     'commit': lambda act: dict(record_type=metric_to_input[act['record_type']],
                                module=act['module'],
@@ -63,13 +73,16 @@ activity_format = {
 }
 
 
-def parse_activity(activity):
+def parse_activity(activity, uf=False):
     record_type = activity['record_type']
     if 'parent_commitMessage' in activity and 'subject' not in activity:
         activity['subject'] = activity['parent_commitMessage'].split('\n')[0]
     elif 'parent_subject' in activity and 'subject' not in activity:
         activity['subject'] = activity['parent_subject']
-    return record_type, activity_format[record_type](activity)
+    if uf:
+        return record_type, act_fmt[record_type].format(**activity)
+    else:
+        return record_type, activity_format[record_type](activity)
 
 
 def unix_time(dt):
@@ -127,6 +140,8 @@ def main():
     parser.add_argument('--chart', action='store_true',
                         help='If True, counter will be resolved to convenient '
                              'chart format', default=False)
+    parser.add_argument('--user-friendly', action='store_true',
+                        help='UF format', default=False)
 
     args = parser.parse_args()
 
@@ -145,7 +160,8 @@ def main():
             current_time = timestamp_to_date(current_time)
             if current_time not in status_report:
                 status_report.update({current_time: {}})
-            record_type, resolved_act = parse_activity(activity)
+            record_type, resolved_act = parse_activity(activity,
+                                                       uf=args.user_friendly)
             if username not in status_report[current_time]:
                 status_report[current_time][username] = []
             status_report[current_time][username].append(resolved_act)
