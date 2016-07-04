@@ -1,0 +1,5 @@
+pbr>=1.8.1
+argparse
+datetime>=4.1.1
+requests>=2.7.0
+json2html>=1.0.1
