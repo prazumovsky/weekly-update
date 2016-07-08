@@ -32,7 +32,7 @@ metric_to_input = dict(mark='mark',
 act_fmt = {
     'mark': '{record_type:6}[{module}] {parent_url}',
     'commit': '{record_type:6}[{module}] '
-    '{url_github}{module}/commit/{commit_id} {subject}',
+    'http://github.com/openstack/{module}/commit/{commit_id} {subject}',
     'bugr': '{record_type:6}[{module}] {web_link} {status}',
     'bugf': '{record_type:6}[{module}] {web_link} {status}',
     'patch': '{record_type:6}[{module}] {parent_url} {subject}',
