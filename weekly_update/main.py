@@ -141,7 +141,7 @@ def main():
                         help='If True, counter will be resolved to convenient '
                              'chart format', default=False)
     parser.add_argument('--user-friendly', action='store_true',
-                        help='UF format', default=False)
+                        help='UF format', default=True)
 
     args = parser.parse_args()
 
