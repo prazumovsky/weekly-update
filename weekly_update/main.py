@@ -169,19 +169,24 @@ def main():
             total_counter[metric_to_input[record_type]] += 1
 
     datedict = calc_timeinterval(args.days)
-    init_msg = 'Status report from %(start)s to %(end)s:\n' % {
-        'start': timestamp_to_date(datedict['start_date']),
-        'end': timestamp_to_date(datedict['end_date'])}
-    for i in range(len(init_msg) - 1):
-        init_msg += '-'
-    print init_msg
-    print '\n'
+    if not args.chart:
+        init_msg = 'Status report from %(start)s to %(end)s:\n' % {
+            'start': timestamp_to_date(datedict['start_date']),
+            'end': timestamp_to_date(datedict['end_date'])}
+        for i in range(len(init_msg) - 1):
+            init_msg += '-'
+        print init_msg
+        print '\n'
+    else:
+        status_report['counters'] = {}
+        for name, counter in user_counter.items():
+            status_report['counters'][name] = map(lambda x: list(x),
+                                                  counter.items())
+        status_report['counters']['total'] = map(lambda x: list(x),
+                                                 total_counter.items())
     print json.dumps(status_report, indent=4, sort_keys=True)
     print '\n'
-    if args.chart:
-        counter_to_chart.print_chart_format(user_counter)
-        counter_to_chart.print_chart_format(total_counter, total=True)
-    else:
+    if not args.chart:
         result = ['User counters:\n--------------',
                   json.dumps(user_counter, indent=4, sort_keys=True),
                   'Total counter:\n--------------',
