@@ -73,16 +73,13 @@ activity_format = {
 }
 
 
-def parse_activity(activity, uf=False):
+def parse_activity(activity):
     record_type = activity['record_type']
     if 'parent_commitMessage' in activity and 'subject' not in activity:
         activity['subject'] = activity['parent_commitMessage'].split('\n')[0]
     elif 'parent_subject' in activity and 'subject' not in activity:
         activity['subject'] = activity['parent_subject']
-    if uf:
-        return record_type, act_fmt[record_type].format(**activity)
-    else:
-        return record_type, activity_format[record_type](activity)
+    return record_type, act_fmt[record_type].format(**activity)
 
 
 def unix_time(dt):
@@ -96,11 +93,14 @@ def calc_timeinterval(days):
                 end_date=unix_time(end_date))
 
 
-def get_report(username, metric='all', days=7):
+def get_report(username, metric='all', days=7, module=None):
     params = dict(release='all',
                   metric=metric,
+                  project_type='all',
                   user_id=username,
                   page_size=300)
+    if module:
+        params['module'] = module
     params.update(calc_timeinterval(days=days))
     url = 'http://stackalytics.com/api/1.0/activity'
     response = requests.get(url, params=params)
@@ -126,8 +126,10 @@ def prepare_counter():
 def main():
     parser = argparse.ArgumentParser(description='Stackalytics status update.')
     parser.add_argument('username', action='store', nargs='+',
-                        help='	Launchpad id of user or email '
+                        help='Launchpad id of user or email '
                              'if no Launchpad id is mapped.')
+    parser.add_argument('--project', action='store',
+                        help='project name for OpenStack')
     parser.add_argument('-d', '--days', action='store', type=int, default=7,
                         help='Number or days to take status')
     parser.add_argument('-m', '--metric', choices=('all', 'mark',
@@ -139,9 +141,7 @@ def main():
                         help='User metric which will be reported')
     parser.add_argument('--chart', action='store_true',
                         help='If True, counter will be resolved to convenient '
-                             'chart format', default=False)
-    parser.add_argument('--user-friendly', action='store_true',
-                        help='UF format', default=True)
+                             'chart format', default=True)
 
     args = parser.parse_args()
 
@@ -149,7 +149,8 @@ def main():
     user_counter = {}
     total_counter = prepare_counter()
     for username in args.username:
-        report = get_report(username, metric=args.metric, days=args.days)
+        report = get_report(username, metric=args.metric, days=args.days,
+                            module=args.project)
         if report['activity']:
             username = report['activity'][0]['author_name']
         user_counter[username] = prepare_counter()
@@ -160,8 +161,7 @@ def main():
             current_time = timestamp_to_date(current_time)
             if current_time not in status_report:
                 status_report.update({current_time: {}})
-            record_type, resolved_act = parse_activity(activity,
-                                                       uf=args.user_friendly)
+            record_type, resolved_act = parse_activity(activity)
             if username not in status_report[current_time]:
                 status_report[current_time][username] = []
             status_report[current_time][username].append(resolved_act)
@@ -192,4 +192,3 @@ def main():
                   'Total counter:\n--------------',
                   json.dumps(total_counter, indent=4, sort_keys=True)]
         print '\n\n\n'.join(result)
-
